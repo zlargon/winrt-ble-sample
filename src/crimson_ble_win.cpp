@@ -9,8 +9,22 @@ using namespace winrt;
 using namespace winrt::Windows::Devices::Enumeration;
 using namespace winrt::Windows::Foundation;
 
+event_token deviceWatcherAddedToken;
+event_token deviceWatcherUpdatedToken;
+event_token deviceWatcherRemovedToken;
+event_token deviceWatcherEnumerationCompletedToken;
+event_token deviceWatcherStoppedToken;
+
+void DeviceWatcher_Added(DeviceWatcher sender, DeviceInformation deviceInfo);
+void DeviceWatcher_Updated(DeviceWatcher sender, DeviceInformationUpdate deviceInfoUpdate);
+void DeviceWatcher_Removed(DeviceWatcher sender, DeviceInformationUpdate deviceInfoUpdate);
+void DeviceWatcher_EnumerationCompleted(DeviceWatcher sender, IInspectable const&);
+void DeviceWatcher_Stopped(DeviceWatcher sender, IInspectable const&);
+
+// main
 int main () {
-    DeviceWatcher deviceWatcher{ nullptr };
+    // BT_Code: Example showing paired and non-paired in a single query.
+    hstring aqsAllBluetoothLEDevices = L"(System.Devices.Aep.ProtocolId:=\"{bb7bb05e-5972-42b5-94fc-76eaa7084d49}\")";
 
     // Property strings are documented here https://msdn.microsoft.com/en-us/library/windows/desktop/ff521659(v=vs.85).aspx
     auto requestedProperties = single_threaded_vector<hstring>({
@@ -19,19 +33,55 @@ int main () {
         L"System.Devices.Aep.Bluetooth.Le.IsConnectable"
     });
 
-    hstring aqsAllBluetoothLEDevices = L"(System.Devices.Aep.ProtocolId:=\"{bb7bb05e-5972-42b5-94fc-76eaa7084d49}\")";
-    deviceWatcher = DeviceInformation::CreateWatcher(aqsAllBluetoothLEDevices,
-                    requestedProperties,
-                    DeviceInformationKind::AssociationEndpoint);
+    DeviceWatcher deviceWatcher = DeviceInformation::CreateWatcher(
+        aqsAllBluetoothLEDevices,
+        requestedProperties,
+        DeviceInformationKind::AssociationEndpoint
+    );
+
+    // Register event handlers before starting the watcher.
+    deviceWatcherAddedToken   = deviceWatcher.Added(DeviceWatcher_Added);
+    deviceWatcherUpdatedToken = deviceWatcher.Updated(DeviceWatcher_Updated);
+    deviceWatcherRemovedToken = deviceWatcher.Removed(DeviceWatcher_Removed);
+    deviceWatcherStoppedToken = deviceWatcher.Stopped(DeviceWatcher_Stopped);
+    deviceWatcherEnumerationCompletedToken = deviceWatcher.EnumerationCompleted(DeviceWatcher_EnumerationCompleted);
 
     // Register event handlers before starting the watcher.
     // Clear existing devices
-    try {
-        deviceWatcher.Start();
-    } catch (winrt::hresult_error& e) { //got E_ILLEGAL_METHOD_CALL 0x8000000E
-        printf("ERROR: scanning exception.\n");
-        printf("CODE: %ld\n", (long) e.code());
-        printf("MESSAGE: %s\n", e.message());
-    }
+    printf("deviceWatcher.Start\n");
+    deviceWatcher.Start();
 
+    printf("end\n");
+    return 0;
+}
+
+
+// 1. DeviceWatcher_Added
+void DeviceWatcher_Added(DeviceWatcher sender, DeviceInformation deviceInfo)
+{
+    printf("DeviceWatcher_Added\n");
+}
+
+// 2. DeviceWatcher_Updated
+void DeviceWatcher_Updated(DeviceWatcher sender, DeviceInformationUpdate deviceInfoUpdate)
+{
+    printf("DeviceWatcher_Updated\n");
+}
+
+// 3. DeviceWatcher_Removed
+void DeviceWatcher_Removed(DeviceWatcher sender, DeviceInformationUpdate deviceInfoUpdate)
+{
+    printf("DeviceWatcher_Removed\n");
+}
+
+// 4. DeviceWatcher_EnumerationCompletedDeviceWatcher_EnumerationCompleted
+void DeviceWatcher_EnumerationCompleted(DeviceWatcher sender, IInspectable const&)
+{
+    printf("DeviceWatcher_EnumerationCompleted\n");
+}
+
+// 5. DeviceWatcher_Stopped
+void DeviceWatcher_Stopped(DeviceWatcher sender, IInspectable const&)
+{
+    printf("DeviceWatcher_Stopped\n");
 }
