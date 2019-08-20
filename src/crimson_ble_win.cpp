@@ -3,17 +3,11 @@
 #include <winrt/Windows.Devices.Enumeration.h>
 #include <winrt/Windows.Devices.Bluetooth.h>
 #include <winrt/Windows.Devices.Bluetooth.GenericAttributeProfile.h>
-#include <cstdio>
 
 using namespace winrt;
 using namespace winrt::Windows::Devices::Enumeration;
 using namespace winrt::Windows::Foundation;
-
-event_token deviceWatcherAddedToken;
-event_token deviceWatcherUpdatedToken;
-event_token deviceWatcherRemovedToken;
-event_token deviceWatcherEnumerationCompletedToken;
-event_token deviceWatcherStoppedToken;
+using namespace std::chrono_literals;   // seconds
 
 void DeviceWatcher_Added(DeviceWatcher sender, DeviceInformation deviceInfo);
 void DeviceWatcher_Updated(DeviceWatcher sender, DeviceInformationUpdate deviceInfoUpdate);
@@ -23,6 +17,10 @@ void DeviceWatcher_Stopped(DeviceWatcher sender, IInspectable const&);
 
 // main
 int main () {
+    winrt::init_apartment();
+
+    std::cout << "Main Thread Id: " << std::this_thread::get_id() << std::endl;
+
     // BT_Code: Example showing paired and non-paired in a single query.
     hstring aqsAllBluetoothLEDevices = L"(System.Devices.Aep.ProtocolId:=\"{bb7bb05e-5972-42b5-94fc-76eaa7084d49}\")";
 
@@ -40,18 +38,20 @@ int main () {
     );
 
     // Register event handlers before starting the watcher.
-    deviceWatcherAddedToken   = deviceWatcher.Added(DeviceWatcher_Added);
-    deviceWatcherUpdatedToken = deviceWatcher.Updated(DeviceWatcher_Updated);
-    deviceWatcherRemovedToken = deviceWatcher.Removed(DeviceWatcher_Removed);
-    deviceWatcherStoppedToken = deviceWatcher.Stopped(DeviceWatcher_Stopped);
-    deviceWatcherEnumerationCompletedToken = deviceWatcher.EnumerationCompleted(DeviceWatcher_EnumerationCompleted);
+    deviceWatcher.Added(DeviceWatcher_Added);       // must use
+    deviceWatcher.Updated(DeviceWatcher_Updated);   // must use
+    deviceWatcher.Removed(DeviceWatcher_Removed);
+    deviceWatcher.Stopped(DeviceWatcher_Stopped);
+    deviceWatcher.EnumerationCompleted(DeviceWatcher_EnumerationCompleted);
 
     // Register event handlers before starting the watcher.
     // Clear existing devices
-    printf("deviceWatcher.Start\n");
     deviceWatcher.Start();
 
-    printf("end\n");
+    // sleep 10s
+    std::this_thread::sleep_for(10s);
+
+    std::cout << "Done -- Main Thread Id: " << std::this_thread::get_id() << std::endl;
     return 0;
 }
 
@@ -59,29 +59,30 @@ int main () {
 // 1. DeviceWatcher_Added
 void DeviceWatcher_Added(DeviceWatcher sender, DeviceInformation deviceInfo)
 {
-    printf("DeviceWatcher_Added\n");
+    std::cout << "DeviceWatcher_Added (" << std::this_thread::get_id() << ") -- "
+            << deviceInfo.Id().c_str() << " : " << deviceInfo.Name().c_str() << std::endl;
 }
 
 // 2. DeviceWatcher_Updated
 void DeviceWatcher_Updated(DeviceWatcher sender, DeviceInformationUpdate deviceInfoUpdate)
 {
-    printf("DeviceWatcher_Updated\n");
+    std::cout << "DeviceWatcher_Updated (" << std::this_thread::get_id() << ")" << std::endl;
 }
 
 // 3. DeviceWatcher_Removed
 void DeviceWatcher_Removed(DeviceWatcher sender, DeviceInformationUpdate deviceInfoUpdate)
 {
-    printf("DeviceWatcher_Removed\n");
+    std::cout << "DeviceWatcher_Removed (" << std::this_thread::get_id() << ")" << std::endl;
 }
 
 // 4. DeviceWatcher_EnumerationCompletedDeviceWatcher_EnumerationCompleted
 void DeviceWatcher_EnumerationCompleted(DeviceWatcher sender, IInspectable const&)
 {
-    printf("DeviceWatcher_EnumerationCompleted\n");
+    std::cout << "DeviceWatcher_EnumerationCompleted (" << std::this_thread::get_id() << ")" << std::endl;
 }
 
 // 5. DeviceWatcher_Stopped
 void DeviceWatcher_Stopped(DeviceWatcher sender, IInspectable const&)
 {
-    printf("DeviceWatcher_Stopped\n");
+    std::cout << "DeviceWatcher_Stopped (" << std::this_thread::get_id() << ")" << std::endl;
 }
